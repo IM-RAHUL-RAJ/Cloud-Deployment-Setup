@@ -78,11 +78,14 @@ RUN if [ -n "$BUILD_ENV" ]; then export $BUILD_ENV; fi; npm run ${BUILD_SCRIPT} 
 
 # Find the folder holding the page (Angular 17+: dist/<app>/browser, Vite: dist,
 # create-react-app: build). An SSR build has index.csr.html instead of index.html.
+# With several index.html files (a second app in a sub-folder) the one nearest the
+# top is the site root.
 RUN set -eu; \
     if [ -n "$DIST_DIR" ]; then root="$DIST_DIR"; \
     else \
-      idx="$(find dist build out \( -name index.html -o -name index.csr.html \) -path '*/browser/*' 2>/dev/null | head -n 1)"; \
-      [ -n "$idx" ] || idx="$(find dist build out -name index.html 2>/dev/null | head -n 1)"; \
+      shallowest() { awk '{ n = gsub("/", "/"); print n " " $0 }' | sort -n | head -n 1 | cut -d' ' -f2-; }; \
+      idx="$(find dist build out \( -name index.html -o -name index.csr.html \) -path '*/browser/*' 2>/dev/null | shallowest)"; \
+      [ -n "$idx" ] || idx="$(find dist build out -name index.html 2>/dev/null | shallowest)"; \
       [ -n "$idx" ] || { echo "No index.html found under dist/ build/ out/. Set FRONTEND_DIST_DIR." >&2; exit 1; }; \
       root="$(dirname "$idx")"; \
     fi; \
