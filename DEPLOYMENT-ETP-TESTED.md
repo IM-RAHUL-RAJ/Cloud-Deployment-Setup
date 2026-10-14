@@ -291,10 +291,7 @@ Watch the rollout:
 ```bash
 kubectl get pods -w
 kubectl get svc
-kubectl rollout status deployment/auth-service --timeout=180s
-kubectl rollout status deployment/order-service --timeout=180s
-kubectl rollout status deployment/executor-service --timeout=180s
-kubectl rollout status deployment/frontend --timeout=180s
+
 ```
 
 ## 8. Important Cleanup
