@@ -103,7 +103,7 @@ Verify it:
 
 ```bash
 kubectl get pods -n kube-system | grep ebs
-kubectl apply -f /k8s/base/storageclass.yaml
+kubectl apply -f k8s/base/storageclass.yaml
 kubectl get storageclass gp3
 ```
 
