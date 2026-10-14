@@ -276,23 +276,7 @@ done
 Update the ECR registry values in [`base/kustomization.yaml`](k8s/base/kustomization.yaml)
 if the AWS account or image tag differs.
 
-## 7. Apply the Four-LoadBalancer Deployment
 
-The tested public URLs were:
-
-```env
-FRONTEND_URL=http://a5c8b9e23779349a2bc8f8fce7d947a6-2144842538.ap-south-1.elb.amazonaws.com
-AUTH_SERVICE_URL=http://a8c89df1ede7b4e44b3d76a264737752-1915399272.ap-south-1.elb.amazonaws.com
-ORDER_SERVICE_URL=http://a02f352fcf14f4d308d344c4e5b314cf-851894136.ap-south-1.elb.amazonaws.com
-EXECUTOR_SERVICE_URL=http://ad1841a95b39c414587e7d3bca3c6-61995774.ap-south-1.elb.amazonaws.com
-CORS_ALLOWED_ORIGINS=http://a5c8b9e23779349a2bc8f8fce7d947a6-2144842538.ap-south-1.elb.amazonaws.com
-```
-
-For a new cluster, replace these with the DNS names returned by:
-
-```bash
-kubectl get svc
-```
 
 Validate and apply:
 
