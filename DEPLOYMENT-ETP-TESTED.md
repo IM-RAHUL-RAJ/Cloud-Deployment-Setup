@@ -67,7 +67,7 @@ aws sts get-caller-identity
 ## 2. Create the Cluster
 
 The tested values are already stored in
-[`cluster.example.yaml`](cluster.example.yaml). Run the file directly:
+[`cluster.example.yaml`](k8s/cluster.example.yaml). Run the file directly:
 
 ```bash
 eksctl create cluster -f k8s/cluster.example.yaml
@@ -147,7 +147,7 @@ PGSSLMODE=no-verify
 JDBC_PARAMS=&sslmode=require
 ```
 
-These values are already in [`base/config.env`](base/config.env) for this
+These values are already in [`base/config.env`](k8s/base/config.env) for this
 project. For a different project, replace them with that project's RDS values.
 
 Allow the EKS node security group to reach RDS on TCP `5432`. The following
@@ -234,7 +234,7 @@ SMTP_PASS=
 
 Skip this entire section if the four ECR repositories already exist and the
 current images have already been pushed. Before continuing, verify that
-[`base/kustomization.yaml`](base/kustomization.yaml) references those existing
+[`base/kustomization.yaml`](k8s/base/kustomization.yaml) references those existing
 repositories and the intended image tags.
 
 The AWS account ID is discovered automatically:
@@ -272,7 +272,7 @@ for repo in "${!IMAGE_MAP[@]}"; do
 done
 ```
 
-Update the ECR registry values in [`base/kustomization.yaml`](base/kustomization.yaml)
+Update the ECR registry values in [`base/kustomization.yaml`](k8s/base/kustomization.yaml)
 if the AWS account or image tag differs.
 
 ## 7. Apply the Four-LoadBalancer Deployment

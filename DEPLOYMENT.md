@@ -142,7 +142,7 @@ aws configure set region "$AWS_REGION"
 
 ## Create EKS
 
-Edit [`cluster.example.yaml`](cluster.example.yaml) for the project name,
+Edit [`cluster.example.yaml`](k8s/cluster.example.yaml) for the project name,
 region, node type, and node count. Choose capacity based on the workloads your
 project runs; Kafka and Java services need more memory than a minimal cluster.
 
@@ -362,7 +362,7 @@ the application repository root. They use the current AWS account and do not
 require manually copying an account ID. The image names and build directories
 must still match the target project's services.
 
-Update the `images` block in [`base/kustomization.yaml`](base/kustomization.yaml)
+Update the `images` block in [`base/kustomization.yaml`](k8s/base/kustomization.yaml)
 with the new registry and immutable image tags or digests. Do not leave another
 project's AWS account ID or image tag in that file.
 
@@ -370,12 +370,12 @@ project's AWS account ID or image tag in that file.
 
 Copy the deployment kit into the project root and configure these files:
 
-1. [`base/config.env`](base/config.env): non-secret settings such as RDS host,
+1. [`base/config.env`](k8s/base/config.env): non-secret settings such as RDS host,
    database name, schemas, ports, Kafka topics, service URLs, and feature flags.
-2. [`base/secrets.env.example`](base/secrets.env.example): template only. Copy
+2. [`base/secrets.env.example`](k8s/base/secrets.env.example): template only. Copy
    it to `base/secrets.env` locally and fill in passwords, JWT secrets, and API
    keys. The real file is ignored by Git.
-3. [`base/generated/application.yml`](base/generated/application.yml): the
+3. [`base/generated/application.yml`](k8s/base/generated/application.yml): the
   structured shared configuration file mounted at `/config` and referenced by
   `SHARED_CONFIG`. `config.env` supplies flat environment variables through
   `envFrom`; this YAML supplies the file-based configuration contract and
@@ -385,7 +385,7 @@ Copy the deployment kit into the project root and configure these files:
 4. `overlays/four-lb/urls.env`: public frontend/API hostnames after the
    LoadBalancers receive DNS names. Values must match how the application joins
    hostnames and ports.
-5. [`base/kustomization.yaml`](base/kustomization.yaml): image repositories and
+5. [`base/kustomization.yaml`](k8s/base/kustomization.yaml): image repositories and
    tags, plus the resource list.
 
 Render before applying:
