@@ -1,0 +1,25 @@
+# STAGE 1 - one classic load balancer per public service (frontend, auth, order).
+# The executor stays internal (no browser or caller needs it). Addresses exist only after the
+# first apply: guide step 7.5 writes them into urls.env.
+# NOTE: the three hostnames differ, so browser cookies are cross-site; the refresh-token cookie
+# (SameSite=lax) will not be sent on API calls. Use the ingress overlay (or one domain) for that.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+configMapGenerator:
+  - name: etp-urls
+    envs: [urls.env]
+patches:
+  - target: { kind: Service, name: frontend }
+    patch: |-
+      - { op: replace, path: /spec/type, value: LoadBalancer }
+  - target: { kind: Service, name: auth-service }
+    patch: |-
+      - { op: replace, path: /spec/type, value: LoadBalancer }
+  - target: { kind: Service, name: order-service }
+    patch: |-
+      - { op: replace, path: /spec/type, value: LoadBalancer }
+  - target: { kind: Service, name: executor-service }
+    patch: |-
+      - { op: replace, path: /spec/type, value: LoadBalancer }

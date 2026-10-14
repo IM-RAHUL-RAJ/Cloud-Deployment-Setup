@@ -1,0 +1,58 @@
+# Node/Nest auth BFF. Listens on AUTH_SERVICE_PORT (config.env) = 3000.
+# To change the port: config.env AUTH_SERVICE_PORT + the three "3000" below + ingress.yaml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: auth-service }
+  template:
+    metadata:
+      labels: { app: auth-service }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000 }
+      containers:
+        - name: auth-service
+          image: etp-auth-service
+          ports:
+            - { name: http, containerPort: 3000 }
+          envFrom:
+            - configMapRef: { name: etp-config }
+            - configMapRef: { name: etp-urls }
+            - secretRef: { name: etp-secrets }
+          env:
+            - { name: SHARED_CONFIG, value: /config/application.yml }
+          volumeMounts:
+            - { name: shared-config, mountPath: /config, readOnly: true }
+          startupProbe:
+            httpGet: { path: /docs/json, port: http }
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet: { path: /docs/json, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /docs/json, port: http }
+            periodSeconds: 20
+            failureThreshold: 5
+          resources:
+            requests: { cpu: 100m, memory: 192Mi }
+            limits: { memory: 512Mi }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+      volumes:
+        - name: shared-config
+          configMap: { name: etp-shared-config }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /docs/json      # ALB checks "/" otherwise
+spec:
+  type: ClusterIP
+  selector: { app: auth-service }
+  ports:
+    - { name: http, port: 3000, targetPort: http }

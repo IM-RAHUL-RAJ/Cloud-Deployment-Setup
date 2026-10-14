@@ -1,0 +1,10 @@
+# STAGE 2 - ONE ALB (Ingress) in front of everything; page and APIs share one hostname.
+#   /auth/*    -> auth-service     /api/v1/* -> order-service     everything else -> frontend
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - ingress.yaml
+configMapGenerator:
+  - name: etp-urls                 # browser-facing addresses. Fill urls.env in after the ALB exists (guide 8.3).
+    envs: [urls.env]

@@ -1,0 +1,60 @@
+# OPTIONAL - Postgres inside the cluster (use RDS instead for anything that matters).
+# Add ../optional/postgres to k8s/.build/kustomization.yaml (guide 7.3) when DB_HOST=postgres.
+# schema.sql + seed_data.sql run once, on the first start with an empty disk.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  clusterIP: None
+  selector: { app: postgres }
+  ports:
+    - { name: pg, port: 5432, targetPort: pg }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres }
+  template:
+    metadata:
+      labels: { app: postgres }
+    spec:
+      securityContext: { fsGroup: 70 }       # postgres alpine user
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - { name: pg, containerPort: 5432 }
+          env:
+            - { name: POSTGRES_DB,       valueFrom: { configMapKeyRef: { name: etp-config, key: DB_NAME } } }
+            - { name: POSTGRES_USER,     valueFrom: { configMapKeyRef: { name: etp-config, key: DB_USER } } }
+            - { name: POSTGRES_PASSWORD, valueFrom: { secretKeyRef: { name: etp-secrets, key: DB_PASSWORD } } }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          readinessProbe:
+            exec: { command: [sh, -c, "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"] }
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: { port: pg }
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 768Mi }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+            - { name: initdb, mountPath: /docker-entrypoint-initdb.d, readOnly: true }
+      volumes:
+        - name: initdb
+          configMap: { name: etp-postgres-init }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: gp3
+        resources:
+          requests: { storage: 5Gi }

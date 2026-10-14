@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - postgres.yaml
+configMapGenerator:
+  - name: etp-postgres-init
+    files:
+      - 01-schema.sql=generated/schema.sql
+      - 02-seed_data.sql=generated/seed_data.sql

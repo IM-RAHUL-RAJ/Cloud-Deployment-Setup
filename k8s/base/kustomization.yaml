@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - storageclass.yaml
+  - kafka.yaml
+  - kafka-topics-job.yaml
+  - auth-service.yaml
+  - order-service.yaml
+  - executor-service.yaml
+  - frontend.yaml
+configMapGenerator:
+  - name: etp-config
+    envs: [config.env]
+  - name: etp-shared-config            # the project's Config/application.yml (copy it into base/generated/ first - guide step 7.2)
+    files: [application.yml=generated/application.yml]
+secretGenerator:
+  - name: etp-secrets
+    envs: [secrets.env]                # your secrets (copy of k8s/secrets.env)
+images:
+  - name: etp-auth-service
+    newName: 323187579619.dkr.ecr.ap-south-1.amazonaws.com/etp-auth-service
+    newTag: latest
+  - name: etp-order-service
+    newName: 323187579619.dkr.ecr.ap-south-1.amazonaws.com/etp-order-service
+    newTag: latest
+  - name: etp-executor-service
+    newName: 323187579619.dkr.ecr.ap-south-1.amazonaws.com/etp-executor-service
+    newTag: latest
+  - name: etp-frontend
+    newName: 323187579619.dkr.ecr.ap-south-1.amazonaws.com/etp-frontend
+    newTag: uuid-fix

@@ -1,0 +1,25 @@
+# The AWS Load Balancer Controller (guide step 8.1) builds an ALB from this.
+# The executor is not listed: no browser calls it.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: etp
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip              # straight to pods, Services stay internal
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    # HTTPS: use these two instead of the line above, then use https:// in urls.env and
+    # COOKIE_SECURE=true in base/config.env. Certificate must be in the cluster's region.
+    #alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+    #alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:REGION:ACCOUNT:certificate/ID
+    #alb.ingress.kubernetes.io/ssl-redirect: "443"
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - { path: /auth,   pathType: Prefix, backend: { service: { name: auth-service,  port: { number: 3000 } } } }
+          - { path: /docs,   pathType: Prefix, backend: { service: { name: auth-service,  port: { number: 3000 } } } }
+          - { path: /api/v1, pathType: Prefix, backend: { service: { name: order-service, port: { number: 8081 } } } }
+          - { path: /health, pathType: Exact,  backend: { service: { name: order-service, port: { number: 8081 } } } }
+          - { path: /,       pathType: Prefix, backend: { service: { name: frontend,      port: { number: 80 } } } }

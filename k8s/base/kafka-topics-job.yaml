@@ -1,0 +1,36 @@
+# Creates the Kafka topics (+ dead-letter topics), then finishes. --if-not-exists makes it safe to re-run.
+# A finished Job can't be changed: before re-applying run  kubectl -n etp delete job kafka-topics
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-topics
+spec:
+  backoffLimit: 10
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels: { app: kafka-topics }
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: create-topics
+          image: apache/kafka:3.8.0
+          command:
+            - bash
+            - -c
+            - |
+              set -eu
+              BS=kafka:29092
+              export PATH=/opt/kafka/bin:$PATH
+              until kafka-topics.sh --bootstrap-server $BS --list >/dev/null 2>&1; do echo "waiting for Kafka"; sleep 5; done
+              # name partitions retention.ms   (same as Infrastructure/Kafka/scripts/create-topics.sh)
+              for t in "orders 3 604800000" "trade-events 3 2592000000" "market-data 6 86400000" \
+                       "orders.DLT 3 604800000" "trade-events.DLT 3 2592000000" "market-data.DLT 6 86400000"; do
+                set -- $t
+                kafka-topics.sh --bootstrap-server $BS --create --if-not-exists --topic $1 \
+                  --partitions $2 --replication-factor 1 --config retention.ms=$3 --config cleanup.policy=delete
+              done
+              kafka-topics.sh --bootstrap-server $BS --list
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 512Mi }

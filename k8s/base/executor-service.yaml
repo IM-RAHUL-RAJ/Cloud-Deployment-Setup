@@ -1,0 +1,61 @@
+# Spring Boot executor + market-data poller. No HTTP endpoint is relied on: health = port open.
+# Port = EXECUTOR_SERVICE_PORT (config.env) = 8082. Run ONE replica (it polls the market-data API).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: executor-service
+spec:
+  replicas: 1
+  strategy: { type: Recreate }          # never two pollers at once during a rollout
+  selector:
+    matchLabels: { app: executor-service }
+  template:
+    metadata:
+      labels: { app: executor-service }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001 }
+      containers:
+        - name: executor-service
+          image: etp-executor-service
+          ports:
+            - { name: http, containerPort: 8082 }
+          envFrom:
+            - configMapRef: { name: etp-config }
+            - secretRef: { name: etp-secrets }
+          env:
+            - { name: SHARED_CONFIG, value: /config/application.yml }
+            - { name: SERVER_PORT, value: "8082" }
+            - { name: JAVA_OPTS, value: "-XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError" }
+          volumeMounts:
+            - { name: shared-config, mountPath: /config, readOnly: true }
+            - { name: tmp, mountPath: /tmp }
+          startupProbe:
+            tcpSocket: { port: http }
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket: { port: http }
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: { port: http }
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 250m, memory: 640Mi }
+            limits: { memory: 1280Mi }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+      volumes:
+        - name: shared-config
+          configMap: { name: etp-shared-config }
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: executor-service
+spec:
+  type: ClusterIP
+  selector: { app: executor-service }
+  ports:
+    - { name: http, port: 8082, targetPort: http }
