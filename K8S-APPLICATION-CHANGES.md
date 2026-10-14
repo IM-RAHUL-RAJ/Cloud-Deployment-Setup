@@ -18,22 +18,24 @@ Update the `images` section:
 ```yaml
 images:
   - name: etp-auth-service
-    newName: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/team-auth
-    newTag: v1
+    newName: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/etp-auth-service
+    newTag: latest
   - name: etp-order-service
-    newName: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/team-order
-    newTag: v1
+    newName: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/etp-order-service
+    newTag: latest
   - name: etp-executor-service
-    newName: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/team-executor
-    newTag: v1
+    newName: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/etp-executor-service
+    newTag: latest
   - name: etp-frontend
-    newName: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/team-frontend
-    newTag: v1
+    newName: ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/etp-frontend
+    newTag: latest
 ```
 
-The `name` value must match the image name in the Deployment files. The
-`newName` is the full ECR image URL. The `newTag` must be the tag that was
-actually pushed.
+These are the exact repository names used by the tested deployment. For another
+team, replace the `etp-*` repository names and tags with that team's values. The
+`name` value must match the image name in the Deployment files. The `newName`
+is the full ECR image URL. The `newTag` must be the tag that was actually
+pushed.
 
 You can verify the rendered image URLs with:
 
