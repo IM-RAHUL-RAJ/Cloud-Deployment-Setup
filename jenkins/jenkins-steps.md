@@ -37,27 +37,7 @@ Install Jenkins plugins:
 - Credentials Binding
 - GitHub Integration
 
-## 2. Jenkins Credentials
-
-Create these credentials in Jenkins:
-
-| ID | Type | Use |
-| --- | --- | --- |
-| `etp-k8s-secrets-env` | Secret file | The target project's populated `k8s/base/secrets.env` |
-
-The secret file must contain the keys expected by the application:
-
-```env
-DB_PASSWORD=...
-JWT_SECRET=...
-FAUXNANCE_API_KEY=...
-GEMINI_API_KEY=...
-SMTP_USER=...
-SMTP_PASS=...
-```
-
-Never commit or print this file. The CD pipeline copies it into the workspace
-only during deployment and removes it in `post.always`.
+## 2. Github Credentials
 
 ## Private GitHub Repository Credentials
 
