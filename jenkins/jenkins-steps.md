@@ -59,6 +59,28 @@ SMTP_PASS=...
 Never commit or print this file. The CD pipeline copies it into the workspace
 only during deployment and removes it in `post.always`.
 
+## Private GitHub Repository Credentials
+
+If the application or deployment repository is private, configure Git credentials
+in the Jenkins job. Do not use a GitHub account password; GitHub Git operations
+require a Personal Access Token (PAT) or SSH key.
+
+Recommended HTTPS setup:
+
+1. Create a GitHub fine-grained PAT with access to the required private repository.
+2. Grant repository **Contents: Read-only** permission.
+3. Add a Jenkins credential with:
+   - Kind: **Username with password**
+   - Username: GitHub username
+   - Password: the PAT value
+   - ID: `github-scm`
+4. In the job's **Pipeline script from SCM** configuration, select the `github-scm` credential.
+
+For an organization repository, the organization may require PAT approval or SSO authorization.
+The Jenkins checkout log should then show a successful fetch instead of an authentication error.
+
+AWS credentials are separate: the Jenkins EC2 instance role is used for AWS CLI, ECR, and EKS operations.
+
 ## 3. Create the CI Job
 
 Create a Jenkins Pipeline job named `etp-ci`:
