@@ -259,3 +259,29 @@ aws eks update-kubeconfig --region ap-south-1 --name capstone
 kubectl get nodes
 kubectl get pods -n kube-system | grep ebs
 ```
+
+
+## Where Secrets Are Added
+
+Do not put passwords, API keys, JWT secrets, or database credentials directly in `JenkinsfileCI` or `JenkinsfileCD`.
+
+`JenkinsfileCI` uses the Jenkins EC2 instance IAM role for AWS access and does not need application secrets.
+
+`JenkinsfileCD` uses a Jenkins **Secret file** credential:
+
+```text
+Credential ID: etp-k8s-secrets-env
+```
+
+The credential file must contain the target project's secret keys:
+
+```env
+DB_PASSWORD=...
+JWT_SECRET=...
+FAUXNANCE_API_KEY=...
+GEMINI_API_KEY=...
+SMTP_USER=...
+SMTP_PASS=...
+```
+
+The CD pipeline copies this file into `k8s/base/secrets.env` during deployment and removes it afterward. RDS host, database user, image tag, and cluster name are non-secret parameters; database passwords are not build parameters.
