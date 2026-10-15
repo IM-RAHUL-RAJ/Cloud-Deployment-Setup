@@ -35,6 +35,8 @@ pipeline {
       steps {
         checkout scm
         script {
+          env.AWS_REGION = params.AWS_REGION?.trim() ?: 'ap-south-1'
+          env.K8S_OVERLAY = params.K8S_OVERLAY?.trim() ?: 'k8s/overlays/four-lb'
           env.RELEASE_TAG = "1.${env.BUILD_NUMBER}"
         }
       }
