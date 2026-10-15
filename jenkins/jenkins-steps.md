@@ -98,26 +98,6 @@ The CI console prints the image tag. Copy that tag for the CD job, for example:
 247-a1b2c3d4e5f6
 ```
 
-## 4. GitHub Webhook for CI
-
-The Jenkins server must be reachable by GitHub. `localhost:8080` works only from
-the Jenkins host itself; GitHub cannot call a private localhost address.
-
-Expose Jenkins through a secure public HTTPS URL, then in GitHub:
-
-1. Open **Settings > Webhooks > Add webhook**.
-2. Set the Payload URL to:
-
-```text
-https://<public-jenkins-host>/github-webhook/
-```
-
-3. Set content type to `application/json`.
-4. Select **Just the push event**.
-5. Enable the webhook.
-6. In Jenkins job configuration, enable **GitHub hook trigger for GITScm polling**.
-
-Pushes to the configured branch will then trigger `etp-ci`.
 
 ## 5. Create the CD Job
 
