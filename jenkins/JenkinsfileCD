@@ -10,10 +10,9 @@ pipeline {
 
   parameters {
     string(name: 'AWS_REGION', defaultValue: 'ap-south-1', description: 'AWS region')
-    string(name: 'K8S_SECRETS_CREDENTIAL_ID', defaultValue: 'etp-k8s-secrets-env', description: 'Jenkins Secret file containing KEY=VALUE lines')
-    string(name: 'RDS_HOST', defaultValue: 'database-1.c94cwk4g097q.ap-south-1.rds.amazonaws.com', description: 'RDS endpoint')
+    string(name: 'RDS_HOST', defaultValue: 'database-1.c52m040i8bb8.ap-south-1.rds.amazonaws.com', description: 'RDS endpoint')
     string(name: 'RDS_PORT', defaultValue: '5432', description: 'RDS PostgreSQL port')
-    string(name: 'RDS_DATABASE', defaultValue: 'postgres', description: 'RDS database name')
+    string(name: 'RDS_DATABASE', defaultValue: 'trading_system_db', description: 'RDS database name')
     string(name: 'RDS_USER', defaultValue: 'postgres', description: 'RDS database user')
     string(name: 'IMAGE_TAG', defaultValue: '', description: 'Required ECR tag produced by JenkinsfileCI')
     string(name: 'K8S_OVERLAY', defaultValue: 'k8s/overlays/four-lb', description: 'Kustomize overlay')
@@ -22,7 +21,7 @@ pipeline {
   }
 
   environment {
-    EKS_CLUSTER_NAME = 'capstone'
+    EKS_CLUSTER_NAME = 'etp-cluster-1'
     AUTH_REPO = 'etp-auth-service'
     ORDER_REPO = 'etp-order-service'
     EXECUTOR_REPO = 'etp-executor-service'
@@ -153,24 +152,37 @@ pipeline {
 
     stage('Inject secrets and deploy selected images') {
       steps {
-        withCredentials([file(credentialsId: params.K8S_SECRETS_CREDENTIAL_ID, variable: 'K8S_SECRET_FILE')]) {
-          sh '''#!/usr/bin/env bash
-            set -euo pipefail
-            cp "$K8S_SECRET_FILE" k8s/base/secrets.env
-            kubectl apply --dry-run=server -k "$K8S_OVERLAY"
-            kubectl apply -k "$K8S_OVERLAY"
-            kubectl -n "$K8S_NAMESPACE" set image deployment/auth-service auth-service="$REGISTRY/$AUTH_REPO:$IMAGE_TAG"
-            kubectl -n "$K8S_NAMESPACE" set image deployment/order-service order-service="$REGISTRY/$ORDER_REPO:$IMAGE_TAG"
-            kubectl -n "$K8S_NAMESPACE" set image deployment/executor-service executor-service="$REGISTRY/$EXECUTOR_REPO:$IMAGE_TAG"
-            kubectl -n "$K8S_NAMESPACE" set image deployment/frontend frontend="$REGISTRY/$FRONTEND_REPO:$IMAGE_TAG"
-            kubectl -n "$K8S_NAMESPACE" rollout status deployment/auth-service --timeout=180s
-            kubectl -n "$K8S_NAMESPACE" rollout status deployment/order-service --timeout=180s
-            kubectl -n "$K8S_NAMESPACE" rollout status deployment/executor-service --timeout=180s
-            kubectl -n "$K8S_NAMESPACE" rollout status deployment/frontend --timeout=180s
-            kubectl -n "$K8S_NAMESPACE" get pods -o wide
-            kubectl -n "$K8S_NAMESPACE" get svc
-          '''
-        }
+        sh '''#!/usr/bin/env bash
+          set -euo pipefail
+          # Secrets are hardcoded here; no Jenkins credential is used.
+          cat > k8s/base/secrets.env <<'SECRETS_EOF'
+# SECRETS. Copy to secrets.env (git-ignored) and fill in. Copied to base/secrets.env and turned into the Secret etp-secrets (guide 7.2).
+DB_PASSWORD=password_n3u3d4!
+
+# at least 32 bytes:  node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+JWT_SECRET=c2VjdXJpdHktc2VjcmV0LWZvci1ldHAtY2Fwc3RvbmUtdGVhbTItMjAyNg==
+
+FAUXNANCE_API_KEY=fnx_dev_7mqYhZ6WpaTlmzQm5IEzuf6x3D1nHqf4
+
+GEMINI_API_KEY=AQ.Ab8RN6Jink2dQ5knNHNCf8mOd352T2xFoO6N4To_DM6cr2sH6g
+
+SMTP_USER=quorum.information@gmail.com
+
+SMTP_PASS=lctafmtezmfvoopx
+SECRETS_EOF
+          kubectl apply --dry-run=server -k "$K8S_OVERLAY"
+          kubectl apply -k "$K8S_OVERLAY"
+          kubectl -n "$K8S_NAMESPACE" set image deployment/auth-service auth-service="$REGISTRY/$AUTH_REPO:$IMAGE_TAG"
+          kubectl -n "$K8S_NAMESPACE" set image deployment/order-service order-service="$REGISTRY/$ORDER_REPO:$IMAGE_TAG"
+          kubectl -n "$K8S_NAMESPACE" set image deployment/executor-service executor-service="$REGISTRY/$EXECUTOR_REPO:$IMAGE_TAG"
+          kubectl -n "$K8S_NAMESPACE" set image deployment/frontend frontend="$REGISTRY/$FRONTEND_REPO:$IMAGE_TAG"
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/auth-service --timeout=180s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/order-service --timeout=180s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/executor-service --timeout=180s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/frontend --timeout=180s
+          kubectl -n "$K8S_NAMESPACE" get pods -o wide
+          kubectl -n "$K8S_NAMESPACE" get svc
+        '''
       }
     }
   }
