@@ -10,7 +10,6 @@ pipeline {
 
   parameters {
     string(name: 'AWS_REGION', defaultValue: 'ap-south-1', description: 'AWS region')
-    string(name: 'EKS_CLUSTER_NAME', defaultValue: 'eks-cluster-1', description: 'Existing EKS cluster. This pipeline never creates a cluster.')
     string(name: 'K8S_SECRETS_CREDENTIAL_ID', defaultValue: 'etp-k8s-secrets-env', description: 'Jenkins Secret file containing KEY=VALUE lines')
     string(name: 'RDS_HOST', defaultValue: 'database-1.c94cwk4g097q.ap-south-1.rds.amazonaws.com', description: 'RDS endpoint')
     string(name: 'RDS_PORT', defaultValue: '5432', description: 'RDS PostgreSQL port')
@@ -23,6 +22,7 @@ pipeline {
   }
 
   environment {
+    EKS_CLUSTER_NAME = 'capstone'
     AUTH_REPO = 'etp-auth-service'
     ORDER_REPO = 'etp-order-service'
     EXECUTOR_REPO = 'etp-executor-service'
@@ -32,7 +32,9 @@ pipeline {
   stages {
     stage('Checkout SCM') {
       steps {
+        deleteDir()
         checkout scm
+        sh 'git rev-parse HEAD; test -f k8s/base/generated/application.yml'
         script {
           if (!params.IMAGE_TAG?.trim()) {
             error('IMAGE_TAG is required. Run JenkinsfileCI first and enter its pushed ECR tag.')

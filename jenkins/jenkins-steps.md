@@ -9,7 +9,7 @@ This repository uses two Jenkins jobs:
 The CD pipeline never creates a new cluster. The tested cluster name is:
 
 ```text
-eks-cluster-1
+capstone
 ```
 
 ## 1. Jenkins EC2 Machine
@@ -144,7 +144,7 @@ Click **Build with Parameters** and enter the image tag printed by `etp-ci`:
 
 ```text
 AWS_REGION=ap-south-1
-EKS_CLUSTER_NAME=eks-cluster-1
+EKS_CLUSTER_NAME=capstone
 RDS_HOST=<actual RDS endpoint>
 RDS_PORT=5432
 RDS_DATABASE=postgres
@@ -161,13 +161,24 @@ The four public URL values must already be correct in:
 k8s/overlays/four-lb/urls.env
 ```
 
+## Kubernetes Cleanup Before CD
+
+If old application workloads are still running or consuming RDS connections,
+open [`prereq.md`](prereq.md) and run its kubectl cleanup commands first.
+
+The prerequisite uses the existing kubectl context and removes only the auth,
+order, executor, frontend, and Kafka workloads. It does not configure AWS,
+delete the cluster, delete PVCs, or remove Kubernetes Secrets.
+
+After cleanup, run CD with the CI-generated `IMAGE_TAG`.
+
 ## 7. CD Execution Order
 
 `JenkinsfileCD` runs these stages in order:
 
 1. Checkout the SCM repository.
 2. Require a selected `IMAGE_TAG` from CI.
-3. Verify that `eks-cluster-1` exists and is `ACTIVE`.
+3. Verify that `capstone` exists and is `ACTIVE`.
 4. Configure kubectl for the existing cluster.
 5. Verify worker nodes and the EBS CSI addon.
 6. Update the workspace `config.env` with the Jenkins RDS parameters.
@@ -196,7 +207,7 @@ RDS endpoint returned by AWS. A stale hostname returns no RDS instance ID.
 The EKS node lookup requires these tags:
 
 ```text
-aws:eks:cluster-name=eks-cluster-1
+aws:eks:cluster-name=capstone
 eks:nodegroup-name=workers
 ```
 
@@ -222,7 +233,7 @@ k8s/overlays/four-lb/urls.env         Public service URLs
 The existing EKS cluster must be ready before CD:
 
 ```bash
-aws eks update-kubeconfig --region ap-south-1 --name eks-cluster-1
+aws eks update-kubeconfig --region ap-south-1 --name capstone
 kubectl get nodes
 kubectl get pods -n kube-system | grep ebs
 ```

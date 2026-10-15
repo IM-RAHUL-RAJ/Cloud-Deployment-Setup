@@ -1,0 +1,106 @@
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+    skipDefaultCheckout(true)
+    timeout(time: 45, unit: 'MINUTES')
+  }
+
+  triggers {
+    githubPush()
+    pollSCM('H */2 * * *')
+  }
+
+  parameters {
+    string(name: 'AWS_REGION', defaultValue: 'ap-south-1', description: 'AWS region')
+    string(name: 'K8S_OVERLAY', defaultValue: 'k8s/overlays/four-lb', description: 'Overlay used for frontend build URLs')
+  }
+
+  environment {
+    AWS_REGION = 'ap-south-1'
+    AUTH_REPO = 'etp-auth-service'
+    ORDER_REPO = 'etp-order-service'
+    EXECUTOR_REPO = 'etp-executor-service'
+    FRONTEND_REPO = 'etp-frontend'
+    AUTH_LOCAL_IMAGE = 'auth-service'
+    ORDER_LOCAL_IMAGE = 'order-service'
+    EXECUTOR_LOCAL_IMAGE = 'executor-service'
+    FRONTEND_LOCAL_IMAGE = 'frontend'
+  }
+
+  stages {
+    stage('Checkout SCM') {
+      steps {
+        checkout scm
+        script {
+          env.RELEASE_TAG = "1.${env.BUILD_NUMBER}"
+        }
+      }
+    }
+
+    stage('Validate build agent') {
+      steps {
+        sh '''#!/usr/bin/env bash
+          set -euo pipefail
+          command -v aws >/dev/null
+          command -v docker >/dev/null
+          test -f services/auth_service/Dockerfile
+          test -f services/trade-api/Dockerfile
+          test -f services/executor/Dockerfile
+          test -f frontend/Dockerfile
+        '''
+      }
+    }
+
+    stage('Build and push ECR') {
+      steps {
+        script {
+          env.AWS_ACCOUNT_ID = sh(script: 'aws sts get-caller-identity --query Account --output text', returnStdout: true).trim()
+          env.REGISTRY = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${params.AWS_REGION}.amazonaws.com"
+        }
+        sh '''#!/usr/bin/env bash
+            set -euo pipefail
+            aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+
+            for repo in "$AUTH_REPO" "$ORDER_REPO" "$EXECUTOR_REPO" "$FRONTEND_REPO"; do
+              aws ecr describe-repositories --region "$AWS_REGION" --repository-names "$repo" >/dev/null 2>&1 || \
+              aws ecr create-repository --region "$AWS_REGION" --repository-name "$repo" \
+                --image-scanning-configuration scanOnPush=true \
+                --encryption-configuration encryptionType=AES256 >/dev/null
+            done
+
+            AUTH_URL=$(awk -F= '$1 == "AUTH_SERVICE_URL" {print $2}' "${K8S_OVERLAY}/urls.env")
+            ORDER_URL=$(awk -F= '$1 == "ORDER_SERVICE_URL" {print $2}' "${K8S_OVERLAY}/urls.env")
+            FRONTEND_URL=$(awk -F= '$1 == "FRONTEND_URL" {print $2}' "${K8S_OVERLAY}/urls.env")
+            BUILD_ENV="AUTH_SERVICE_URL=$AUTH_URL AUTH_SERVICE_PORT=3000 ORDER_SERVICE_URL=$ORDER_URL ORDER_SERVICE_PORT=8081 FRONTEND_URL=$FRONTEND_URL FRONTEND_PORT=80"
+
+            docker build -t "$AUTH_LOCAL_IMAGE:$RELEASE_TAG" ./services/auth_service
+            docker build -t "$ORDER_LOCAL_IMAGE:$RELEASE_TAG" ./services/trade-api
+            docker build -t "$EXECUTOR_LOCAL_IMAGE:$RELEASE_TAG" ./services/executor
+            docker build --build-arg "BUILD_ENV=$BUILD_ENV" -t "$FRONTEND_LOCAL_IMAGE:$RELEASE_TAG" ./frontend
+
+            declare -A IMAGE_MAP=(
+              ["$AUTH_REPO"]="$AUTH_LOCAL_IMAGE"
+              ["$ORDER_REPO"]="$ORDER_LOCAL_IMAGE"
+              ["$EXECUTOR_REPO"]="$EXECUTOR_LOCAL_IMAGE"
+              ["$FRONTEND_REPO"]="$FRONTEND_LOCAL_IMAGE"
+            )
+            for repo in "${!IMAGE_MAP[@]}"; do
+              docker tag "${IMAGE_MAP[$repo]}:$RELEASE_TAG" "$REGISTRY/$repo:$RELEASE_TAG"
+              docker push "$REGISTRY/$repo:$RELEASE_TAG"
+            done
+            echo "CI image tag: $RELEASE_TAG"
+            echo "IMAGE_TAG=$RELEASE_TAG"
+        '''
+      }
+    }
+  }
+
+  post {
+    always {
+      sh 'docker logout "${REGISTRY:-}" || true'
+    }
+  }
+}
