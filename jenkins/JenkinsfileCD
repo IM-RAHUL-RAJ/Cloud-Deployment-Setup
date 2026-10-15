@@ -21,7 +21,7 @@ pipeline {
   }
 
   environment {
-    EKS_CLUSTER_NAME = 'etp-cluster-1'
+    EKS_CLUSTER_NAME = 'eks-cluster-1'
     AUTH_REPO = 'etp-auth-service'
     ORDER_REPO = 'etp-order-service'
     EXECUTOR_REPO = 'etp-executor-service'
@@ -157,18 +157,12 @@ pipeline {
           # Secrets are hardcoded here; no Jenkins credential is used.
           cat > k8s/base/secrets.env <<'SECRETS_EOF'
 # SECRETS. Copy to secrets.env (git-ignored) and fill in. Copied to base/secrets.env and turned into the Secret etp-secrets (guide 7.2).
-DB_PASSWORD=password_n3u3d4!
+DB_PASSWORD=iykykykyk
 
 # at least 32 bytes:  node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
-JWT_SECRET=c2VjdXJpdHktc2VjcmV0LWZvci1ldHAtY2Fwc3RvbmUtdGVhbTItMjAyNg==
-
-FAUXNANCE_API_KEY=fnx_dev_7mqYhZ6WpaTlmzQm5IEzuf6x3D1nHqf4
-
-GEMINI_API_KEY=AQ.Ab8RN6Jink2dQ5knNHNCf8mOd352T2xFoO6N4To_DM6cr2sH6g
-
-SMTP_USER=quorum.information@gmail.com
-
-SMTP_PASS=lctafmtezmfvoopx
+JWT_SECRET=whatthehell
+FAUXNANCE_API_KEY=dont_steal
+SMTP_PASS=lolllololo
 SECRETS_EOF
           kubectl apply --dry-run=server -k "$K8S_OVERLAY"
           kubectl apply -k "$K8S_OVERLAY"
