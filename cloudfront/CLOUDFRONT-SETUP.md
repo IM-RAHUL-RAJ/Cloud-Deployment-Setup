@@ -155,30 +155,17 @@ cache login, refresh or authenticated responses.
 | `/health` | Auth | API status page |
 | `/actuator/*` | Order | API status page |
 
-### Apply from the CLI
+### change the urls.env again but only re-apply
 
-The same change as the console steps, for the origins and the two API behaviors. Back up first:
+FRONTEND_URL=https://<cloudfront_url>
+AUTH_SERVICE_URL=http://<AUTH_ELB_DNS>
+ORDER_SERVICE_URL=http://<ORDER_ELB_DNS>
+EXECUTOR_SERVICE_URL=http://<EXECUTOR_ELB_DNS>.  #not required
+CORS_ALLOWED_ORIGINS=https://<cloudfront_url>
+URL_REWRITES=<public-auth-url>:<port>= <public-order-url>:<port>= http://localhost:3000= http://localhost:8081= http://<AUTH_ELB_DNS>:3000= http://<ORDER_ELB_DNS>:8081=
 
-```bash
-aws cloudfront get-distribution-config --id E2BI3F7J0AU587 > ~/cf-backup.json
-python3 - <<'PY'
-import json, os
-d = json.load(open(os.path.expanduser('~/cf-backup.json'))); c = d['DistributionConfig']
-ports = {'<AUTH_ELB_DNS>': 3000, '<ORDER_ELB_DNS>': 8081}   # origin Id -> port
-for o in c['Origins']['Items']:
-    if o['Id'] in ports:
-        o['CustomOriginConfig']['HTTPPort'] = ports[o['Id']]
-for b in c['CacheBehaviors']['Items']:
-    b['OriginRequestPolicyId'] = 'b689b0a8-53d0-40ab-baf2-68738e2966ac'   # AllViewerExceptHostHeader
-json.dump(c, open(os.path.expanduser('~/cf-new.json'), 'w'))
-open(os.path.expanduser('~/cf-etag.txt'), 'w').write(d['ETag'])
-PY
-aws cloudfront update-distribution --id E2BI3F7J0AU587 --if-match "$(cat ~/cf-etag.txt)" \
-  --distribution-config file://$HOME/cf-new.json --query 'Distribution.Status' --output text
-```
+kubectl apply -k k8s/overlays/four-lb
 
-To roll back, rebuild `cf-new.json` from the `DistributionConfig` in `~/cf-backup.json` and run the same update
-with the distribution's current ETag.
 
 ### Wait for deployment
 
