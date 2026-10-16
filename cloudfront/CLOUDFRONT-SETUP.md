@@ -57,11 +57,11 @@ Do not delete Deployments, PVCs, Secrets or the cluster for this.
 `k8s/overlays/four-lb/urls.env` becomes the ConfigMap `etp-urls`, read by the frontend, auth and order pods:
 
 ```env
-FRONTEND_URL=https:frontend_url
+FRONTEND_URL=https://<FRONTEND_URL>
 AUTH_SERVICE_URL=http://<AUTH_ELB_DNS>
 ORDER_SERVICE_URL=http://<ORDER_ELB_DNS>
 EXECUTOR_SERVICE_URL=http://<EXECUTOR_ELB_DNS>
-CORS_ALLOWED_ORIGINS=frontend_url
+CORS_ALLOWED_ORIGINS=https://<FRONTEND_URL>
 URL_REWRITES=<public-auth-url>:<port>= <public-order-url>:<port>= http://localhost:3000= http://localhost:8081= http://<AUTH_ELB_DNS>:3000= http://<ORDER_ELB_DNS>:8081=
 ```
 
