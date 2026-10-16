@@ -164,8 +164,10 @@ EXECUTOR_SERVICE_URL=http://<EXECUTOR_ELB_DNS>.  #not required
 CORS_ALLOWED_ORIGINS=https://<cloudfront_url>
 URL_REWRITES=<public-auth-url>:<port>= <public-order-url>:<port>= http://localhost:3000= http://localhost:8081= http://<AUTH_ELB_DNS>:3000= http://<ORDER_ELB_DNS>:8081=
 
+```bash
 kubectl apply -k k8s/overlays/four-lb
 
+```
 
 ### Wait for deployment
 
