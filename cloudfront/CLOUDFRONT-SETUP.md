@@ -57,11 +57,11 @@ Do not delete Deployments, PVCs, Secrets or the cluster for this.
 `k8s/overlays/four-lb/urls.env` becomes the ConfigMap `etp-urls`, read by the frontend, auth and order pods:
 
 ```env
-FRONTEND_URL=https://d1ui59x7zuh4i5.cloudfront.net
+FRONTEND_URL=https:frontend_url
 AUTH_SERVICE_URL=http://<AUTH_ELB_DNS>
 ORDER_SERVICE_URL=http://<ORDER_ELB_DNS>
 EXECUTOR_SERVICE_URL=http://<EXECUTOR_ELB_DNS>
-CORS_ALLOWED_ORIGINS=https://d1ui59x7zuh4i5.cloudfront.net
+CORS_ALLOWED_ORIGINS=frontend_url
 URL_REWRITES=<public-auth-url>:<port>= <public-order-url>:<port>= http://localhost:3000= http://localhost:8081= http://<AUTH_ELB_DNS>:3000= http://<ORDER_ELB_DNS>:8081=
 ```
 
@@ -83,7 +83,7 @@ Do **not** run `kubectl apply -k k8s/overlays/four-lb` on its own: it resets the
 names. Update the ConfigMap the Deployments use instead:
 
 ```bash
-cd chennai-capstone-SE5-team2
+
 aws eks update-kubeconfig --region ap-south-1 --name etp-cluster-1
 
 # the ConfigMap name the pods use (it carries a hash, e.g. etp-urls-982d78246h)
